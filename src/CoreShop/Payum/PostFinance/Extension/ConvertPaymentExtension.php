@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * CoreShop.
  *
@@ -6,14 +9,13 @@
  * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
  * files that are distributed with this source code.
  *
- * @copyright  Copyright (c) 2015-2020 Dominik Pfaffenbauer (https://www.pfaffenbauer.at)
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
  * @license    https://www.coreshop.org/license     GNU General Public License version 3 (GPLv3)
 */
 
 namespace CoreShop\Payum\PostFinanceBundle\Extension;
 
 use CoreShop\Component\Order\Model\OrderInterface;
-use CoreShop\Component\Order\Repository\OrderRepositoryInterface;
 use CoreShop\Component\Core\Model\PaymentInterface;
 use Payum\Core\Bridge\Spl\ArrayObject;
 use Payum\Core\Extension\Context;
@@ -22,77 +24,62 @@ use Payum\Core\Request\Convert;
 
 final class ConvertPaymentExtension implements ExtensionInterface
 {
-    /**
-     * @var OrderRepositoryInterface
-     */
-    private $orderRepository;
-
-    /**
-     * @param OrderRepositoryInterface $orderRepository
-     */
-    public function __construct(OrderRepositoryInterface $orderRepository)
-    {
-        $this->orderRepository = $orderRepository;
-    }
-
-    /**
-     * @param Context $context
-     */
-    public function onPostExecute(Context $context)
+    public function onPostExecute(Context $context): void
     {
         $action = $context->getAction();
+        $previousActionClassName = \get_class($action);
 
-        $previousActionClassName = get_class($action);
-        if (false === stripos($previousActionClassName, 'ConvertPaymentAction')) {
+        if (false === \stripos($previousActionClassName, 'ConvertPaymentAction')) {
             return;
         }
 
         /** @var Convert $request */
         $request = $context->getRequest();
-        if (false === $request instanceof Convert) {
+        if (!$request instanceof Convert) {
             return;
         }
 
         /** @var PaymentInterface $payment */
         $payment = $request->getSource();
-        if (false === $payment instanceof PaymentInterface) {
+        if (!$payment instanceof PaymentInterface) {
             return;
         }
 
-        /** @var OrderInterface $order */
         $order = $payment->getOrder();
+        if (!$order instanceof OrderInterface) {
+            return;
+        }
+
         $gatewayLanguage = 'en_EN';
 
         if (!empty($order->getLocaleCode())) {
             $orderLanguage = $order->getLocaleCode();
-            // post finance always requires a full language ISO Code
-            if (strpos($orderLanguage, '_') === false) {
-                $gatewayLanguage = $orderLanguage . '_' . strtoupper($orderLanguage);
+
+            // Postfinance always requires a full language ISO Code
+            if (!str_contains($orderLanguage, '_')) {
+                $gatewayLanguage = $orderLanguage . '_' . \mb_strtoupper($orderLanguage);
             } else {
                 $gatewayLanguage = $orderLanguage;
             }
         }
 
         $result = ArrayObject::ensureArrayObject($request->getResult());
-
         $result['LANGUAGE'] = $gatewayLanguage;
 
-        $request->setResult((array)$result);
-
+        $request->setResult((array) $result);
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
-    public function onPreExecute(Context $context)
+    public function onPreExecute(Context $context): void
     {
-
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
-    public function onExecute(Context $context)
+    public function onExecute(Context $context): void
     {
     }
 }

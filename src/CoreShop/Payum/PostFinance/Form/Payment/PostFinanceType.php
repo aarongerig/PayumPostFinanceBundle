@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * CoreShop.
  *
@@ -6,7 +9,7 @@
  * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
  * files that are distributed with this source code.
  *
- * @copyright  Copyright (c) 2015-2020 Dominik Pfaffenbauer (https://www.pfaffenbauer.at)
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
  * @license    https://www.coreshop.org/license     GNU General Public License version 3 (GPLv3)
  */
 
@@ -24,9 +27,9 @@ use Symfony\Component\Validator\Constraints\NotBlank;
 final class PostFinanceType extends AbstractType
 {
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
-    public function buildForm(FormBuilderInterface $builder, array $options)
+    public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
             ->add('environment', TextType::class, [
@@ -58,14 +61,15 @@ final class PostFinanceType extends AbstractType
                 ]
             ])
             ->add('optionalParameters', CollectionType::class, [
-                'allow_add'    => true,
+                'allow_add' => true,
                 'allow_delete' => true,
-                'required'     => false
+                'required' => false,
             ])
-            ->addEventListener(FormEvents::PRE_SET_DATA, function (FormEvent $event) {
+            ->addEventListener(FormEvents::PRE_SET_DATA, static function (FormEvent $event) {
                 $data = $event->getData();
-                //$data['payum.http_client'] = '@coreshop.payum.http_client';
-            });
+                $data['payum.http_client'] = '@coreshop.payum.http_client';
 
+                $event->setData($data);
+            });
     }
 }

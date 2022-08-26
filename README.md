@@ -1,6 +1,6 @@
 # CoreShop PostFinance Payum Connector
 This Bundle activates the PostFinance PaymentGateway in CoreShop.
-It requires the [dachcom-digital/payum-postfinance](https://github.com/dachcom-digital/payum-postfinance) repository which will be installed automatically.
+It requires the [coreshop/payum-postfinance](https://github.com/coreshop/payum-postfinance) repository which will be installed automatically.
 
 ## Important Information
 There is nasty behaviour if a customer returns from the PostFinance payment page: PostFinance fires the callback page **twice** if the user clicks the *"abort"* or *"ok"* button. This leads to a "token not fond" since the token gets invalidated at the first request.
@@ -8,13 +8,13 @@ This Bundle will partly override the `HttpRequestVerifierBuilder` to prevent thi
 To prevent tokens to stay forever, there is also a Command and Maintenance Script which removes outdated "Capture" and "After-Pay" tokens older than two days.
 
 ## Requirements
-CoreShop >= 2.0.0-RC.2
+CoreShop >= 3.0.0-beta.5
 
 ## Installation
 
 #### 1. Composer
-```json
-    "coreshop/payum-postfinance-bundle": "~1.0.0"
+```bash
+$ composer require coreshop/payum-postfinance-bundle:^2.0
 ```
 
 #### 2. Activate

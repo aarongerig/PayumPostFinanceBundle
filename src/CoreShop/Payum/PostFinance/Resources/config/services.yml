@@ -17,7 +17,7 @@ services:
         class: Payum\Core\Bridge\Symfony\Builder\GatewayFactoryBuilder
         arguments: [DachcomDigital\Payum\PostFinance\PostFinanceGatewayFactory]
         tags:
-            - {name: payum.gateway_factory_builder, factory: postfinance }
+            - { name: payum.gateway_factory_builder, factory: postfinance }
 
     #
     # Payum Extensions
@@ -60,13 +60,13 @@ services:
           - { name: console.command, command: 'postfinance:invalidate-expired-tokens' }
 
     #
-    # Maintenance Listener
+    # Maintenance Task
     #
 
-    CoreShop\Payum\PostFinanceBundle\EventListener\TokenInvalidationListener:
+    CoreShop\Payum\PostFinanceBundle\Maintenance\TokenInvalidationTask:
         arguments:
             - '@coreshop.configuration.service'
             - '@CoreShop\Payum\PostFinanceBundle\Invalidator\TokenInvalidator'
             - '%post_finance_token_expired_days%'
         tags:
-            - { name: kernel.event_listener, event: pimcore.system.maintenance, method: registerInvalidator }
+            - { name: pimcore.maintenance.task, type: postfinance_token_invalidation }

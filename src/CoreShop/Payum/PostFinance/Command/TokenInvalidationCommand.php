@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * CoreShop.
  *
@@ -6,7 +9,7 @@
  * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
  * files that are distributed with this source code.
  *
- * @copyright  Copyright (c) 2015-2020 Dominik Pfaffenbauer (https://www.pfaffenbauer.at)
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
  * @license    https://www.coreshop.org/license     GNU General Public License version 3 (GPLv3)
 */
 
@@ -20,37 +23,20 @@ use Symfony\Component\Console\Output\OutputInterface;
 
 final class TokenInvalidationCommand extends Command
 {
-    /**
-     * @var TokenInvalidatorInterface
-     */
-    protected $tokenInvalidator;
 
-    /**
-     * @var int
-     */
-    protected $days;
-
-    /**
-     * TokenInvalidationCommand constructor.
-     *
-     * @param TokenInvalidatorInterface $tokenInvalidator
-     * @param int                       $days
-     */
-    public function __construct(TokenInvalidatorInterface $tokenInvalidator, $days = 0)
+    public function __construct(protected TokenInvalidatorInterface $tokenInvalidator, protected int $days = 0)
     {
-        $this->tokenInvalidator = $tokenInvalidator;
-        $this->days = $days;
         parent::__construct();
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->setName('postfinance:invalidate-expired-tokens')
-            ->setDescription('Invalid Payment Tokens which are older than ' . $this->days . ' days')
+            ->setDescription(\sprintf('Invalid Payment Tokens which are older than %d days', $this->days))
             ->addOption(
                 'days', 'days',
                 InputOption::VALUE_OPTIONAL,
@@ -59,17 +45,19 @@ final class TokenInvalidationCommand extends Command
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritDoc
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $days = $this->days;
+
         if ($input->getOption('days')) {
-            $days = (int)$input->getOption('days');
+            $days = (int) $input->getOption('days');
         }
 
-        $output->writeln('Invalidate Tokens older than ' . $days . ' days.');
+        $output->writeln(\sprintf('Invalidate Tokens older than %d days.', $days));
         $this->tokenInvalidator->invalidate($days);
 
+        return Command::SUCCESS;
     }
 }

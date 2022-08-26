@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 /**
  * CoreShop.
  *
@@ -6,73 +9,51 @@
  * For the full copyright and license information, please view the LICENSE.md and gpl-3.0.txt
  * files that are distributed with this source code.
  *
- * @copyright  Copyright (c) 2015-2020 Dominik Pfaffenbauer (https://www.pfaffenbauer.at)
+ * @copyright  Copyright (c) CoreShop GmbH (https://www.coreshop.org)
  * @license    https://www.coreshop.org/license     GNU General Public License version 3 (GPLv3)
 */
 
 namespace CoreShop\Payum\PostFinanceBundle\Invalidator;
 
-use CoreShop\Bundle\PayumBundle\Model\GatewayConfig;
-use CoreShop\Bundle\PayumBundle\Model\PaymentSecurityToken;
+use CoreShop\Component\PayumPayment\Model\GatewayConfig;
+use CoreShop\Component\PayumPayment\Model\PaymentSecurityToken;
 use CoreShop\Component\Core\Model\PaymentProvider;
 use CoreShop\Component\Payment\Model\Payment;
+use Payum\Core\Model\Identity;
 use Payum\Core\Payum;
-use Payum\Core\Storage\StorageInterface;
-use Doctrine\Common\Persistence\ObjectManager;
+use Doctrine\Persistence\ObjectManager;
 
 final class TokenInvalidator implements TokenInvalidatorInterface
 {
-    /**
-     * @var Payum
-     */
-    private $payum;
-
-    /**
-     * @var StorageInterface
-     */
-    private $objectManager;
-
-    /**
-     * TokenInvalidator constructor.
-     *
-     * @param Payum         $payum
-     * @param ObjectManager $objectManager
-     */
-    public function __construct(Payum $payum, ObjectManager $objectManager = null)
+    public function __construct(private Payum $payum, private ObjectManager $objectManager)
     {
-        $this->payum = $payum;
-        $this->objectManager = $objectManager;
     }
 
-    /**
-     * @param $days
-     */
-    public function invalidate($days)
+    public function invalidate($days): void
     {
+        $outdatedTokens = [];
         $now = new \DateTime();
         $repository = $this->objectManager->getRepository(PaymentSecurityToken::class);
-        $tokens = $repository->findAll();
 
-        $outdatedTokens = [];
+        $tokens = $repository->findAll();
         if (empty($tokens)) {
             return;
         }
 
         /** @var PaymentSecurityToken $token */
         foreach ($tokens as $token) {
-
             $targetUrl = $token->getTargetUrl();
 
             if (empty($targetUrl)) {
                 continue;
             }
 
-            // hacky: we only want to delete capture and after-pay tokens.
-            if (strpos($targetUrl, 'payment/capture') === false && strpos($targetUrl, 'cs/after-pay') === false) {
+            // Hacky: We only want to delete capture and after-pay tokens.
+            if (!\str_contains($targetUrl, 'payment/capture') && !\str_contains($targetUrl, 'cs/after-pay')) {
                 continue;
             }
 
-            /** @var \Payum\Core\Model\Identity $identity */
+            /** @var Identity $identity */
             $identity = $token->getDetails();
 
             $payment = $this->payum->getStorage($identity->getClass())->find($identity);
@@ -87,12 +68,12 @@ final class TokenInvalidator implements TokenInvalidatorInterface
             }
 
             /** @var GatewayConfig $gatewayConfig */
-            $gatewayConfig = $paymentProvider = $paymentProvider->getGatewayConfig();
+            $gatewayConfig = $paymentProvider->getGatewayConfig();
             if (!$gatewayConfig instanceof GatewayConfig) {
                 continue;
             }
 
-            //now only tokens from postfinance factory should get deleted!
+            // Now only tokens from Postfinance factory should get deleted!
             if ($gatewayConfig->getFactoryName() !== 'postfinance') {
                 continue;
             }
@@ -107,8 +88,8 @@ final class TokenInvalidator implements TokenInvalidatorInterface
             }
         }
 
-        //cycle outdated and remove them.
-        if (count($outdatedTokens) === 0) {
+        // Cycle outdated and remove them.
+        if (\count($outdatedTokens) === 0) {
             return;
         }
 
@@ -117,6 +98,5 @@ final class TokenInvalidator implements TokenInvalidatorInterface
         }
 
         $this->objectManager->flush();
-
     }
 }
